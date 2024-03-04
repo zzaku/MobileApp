@@ -1,9 +1,7 @@
-
-
-export function Register() {
+export function Home() {
     return (
         <View >
-        <Text>Register components</Text>
+        <Text>Home</Text>
         <StatusBar style="auto" />
         </View>
     );
