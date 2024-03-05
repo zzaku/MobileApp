@@ -1,10 +1,9 @@
-import Register from "../components/auth/Register";
 import { SafeAreaView, StatusBar, View, Text } from 'react-native';
 
-export function Auth() {
+export function Project() {
   return (
     <SafeAreaView>
-      <Text>Auth</Text>
+      <Text>Project</Text>
       <StatusBar style="auto" />
     </SafeAreaView>
   );

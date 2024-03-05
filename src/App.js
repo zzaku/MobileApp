@@ -1,21 +1,28 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 
+import { Auth } from "./vues/Auth";
+import { Home } from "./vues/Home";
+import { Project } from "./vues/Project";
+
+const Tab = createMaterialBottomTabNavigator();
+const Stack = createStackNavigator();
+const StackNav = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="Project" component={Project} />
+      <Stack.Screen name="Home" component={Home} />
+    </Stack.Navigator>
+  );
+};
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Tab.Navigator>
+        <Tab.Screen name="Home" component={StackNav} />
+        <Tab.Screen name="Auth" component={Auth} />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
