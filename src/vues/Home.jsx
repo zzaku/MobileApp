@@ -1,17 +1,20 @@
 import { SafeAreaView, StatusBar, View, Text } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "../core/context/firebaseContext";
+import { useEffect, useState } from "react";
 
 export function Home() {
-  try {
-    const user = AsyncStorage.getItem("user");
-    console.log("USER", user);
-  } catch (error) {}
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem("user", (err, result) => {
+      setUser(result);
+    });
+  }, []);
 
   return (
     <SafeAreaView>
-      <Text>Home</Text>
-
-      <StatusBar style="auto" />
+      {user ? <Text>Logged in</Text> : <Text>Not logged in</Text>}
     </SafeAreaView>
   );
 }

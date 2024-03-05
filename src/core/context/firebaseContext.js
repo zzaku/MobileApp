@@ -12,8 +12,7 @@ import {
 } from "firebase/auth";
 import { db, auth } from "../firebase/firebase";
 import { collection } from "firebase/firestore";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const AuthContext = createContext();
 
@@ -139,16 +138,21 @@ export const AuthProvider = ({ children }) => {
   };
   /**/
   /**/ useEffect(() => {
-    /**/
-    /**/ return onAuthStateChanged(auth, (user) => {
-      /**/ if (user) {
-        /**/ setCurrentUserID(user);
-        /**/
+    return onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUserID(user);
+
+        return () => {
+          setCurrentUserID(user);
+        };
       } else {
-        /**/ setCurrentUserID(null);
-        /**/ setCurrentUser(null);
-        /**/
+        setCurrentUser(null);
+
+        return () => {
+          setCurrentUserID(user);
+        };
       }
+
       /**/
     });
     /**/
@@ -156,7 +160,7 @@ export const AuthProvider = ({ children }) => {
   }, [auth, currentUserID, currentUser]);
 
   const value = {
-    setCurrentUserID,
+    currentUserID,
     signup,
     signin,
     signout,
