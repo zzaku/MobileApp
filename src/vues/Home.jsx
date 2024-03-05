@@ -1,8 +1,11 @@
+import { SafeAreaView, StatusBar, View, Text } from 'react-native';
+
+
 export function Home() {
-    return (
-        <View >
-        <Text>Home</Text>
-        <StatusBar style="auto" />
-        </View>
-    );
+  return (
+    <SafeAreaView>
+      <Text>Home</Text>
+      <StatusBar style="auto" />
+    </SafeAreaView>
+  );
 }
