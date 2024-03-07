@@ -11,7 +11,7 @@ import {
   EmailAuthProvider,
 } from "firebase/auth";
 import { db, auth } from "../firebase/firebase";
-import { collection } from "firebase/firestore";
+import { collection, addDoc, getDocs } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ref, getStorage, getDownloadURL, uploadString, deleteObject, listAll, list } from "firebase/storage";
 
