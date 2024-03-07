@@ -11,6 +11,7 @@ import { Home } from "./vues/Home";
 import { Project } from "./vues/Project";
 
 import HomeHeader from "./core/header/HomeHeader";
+import { AuthProvider } from "./core/context/firebaseContext";
 
 const Stack = createStackNavigator();
 
@@ -44,13 +45,16 @@ const StackNav = () => {
         }} />
       </Stack.Navigator>
     </GluestackUIProvider>
+    
   );
 };
 
 export default function App() {
   return (
+    <AuthProvider>
       <NavigationContainer >
         <StackNav/>
       </NavigationContainer>
+    </AuthProvider>
   );
 }

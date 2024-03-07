@@ -53,16 +53,16 @@ export const AuthProvider = ({ children }) => {
   }, [currentUserID]);
 
 ////////////////////////////////////////////////////////////
-/**/   const userProjectRef = currentUserID && collection(db, "Users", currentUserID.uid, "Project")
+/**/   //const userProjectRef = currentUserID ? collection(db, "Users", currentUserID.uid, "Project") : null;
 /**/
 /**/   const addProject = async (data) => {
-/**/          await addDoc(userProjectRef, data);
+/**/          await addDoc(collection(db, "Users", currentUserID.uid), data);
 /**/          getProject();
 /**/     }
 /**/
 /**/   const getProject = async () => {
-/**/          if(userProjectRef){
-/**/              const datas = await getDocs(userProjectRef);
+/**/          if(currentUserID){
+/**/              const datas = await getDocs(collection(db, "Users", currentUserID.uid));
 /**/              setCurrentUser({...currentUser, Project: datas.docs.map(doc => ({...doc.data(), id: doc.id}))})
 /**/          } else {
 /**/              setCurrentUser(null)
