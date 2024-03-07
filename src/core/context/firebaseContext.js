@@ -13,6 +13,7 @@ import {
 import { db, auth } from "../firebase/firebase";
 import { collection } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ref, getStorage, getDownloadURL, uploadString, deleteObject, listAll, list } from "firebase/storage";
 
 const AuthContext = createContext();
 
@@ -39,12 +40,47 @@ export const AuthProvider = ({ children }) => {
           uid: "",
         }
   );
-  const [currentUser, setCurrentUser] = useState(null);
+  
+  const userAccountInfos = AsyncStorage.userInfos;
+  const [currentUser, setCurrentUser] = useState(userAccountInfos ? JSON.parse(userAccountInfos) : null)
 
+  useEffect(() => {
+    AsyncStorage.setItem("userInfos", JSON.stringify(currentUser));
+  }, [currentUser]);
+  
   useEffect(() => {
     AsyncStorage.setItem("user", JSON.stringify(currentUserID));
   }, [currentUserID]);
-  ///////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+/**/   const userProjectRef = currentUserID && collection(db, "Users", currentUserID.uid, "Project")
+/**/
+/**/   const addProject = async (data) => {
+/**/          await addDoc(userProjectRef, data);
+/**/          getProject();
+/**/     }
+/**/
+/**/   const getProject = async () => {
+/**/          if(userProjectRef){
+/**/              const datas = await getDocs(userProjectRef);
+/**/              setCurrentUser({...currentUser, Project: datas.docs.map(doc => ({...doc.data(), id: doc.id}))})
+/**/          } else {
+/**/              setCurrentUser(null)
+/**/          }
+/**/      }
+/**/
+/**/   const uploadBackground = async (image, projectId) => {   
+/**/          const imageRef = ref(storage, `background/${projectId}`)
+/**/          await uploadString(imageRef, avatar, 'data_url')
+/**/          getUser()
+/**/     }
+/**/
+/**/   const getBackBackground = async (projectId) => {
+/**/          const storage = getStorage();
+/**/          const getUrl = getDownloadURL(ref(storage,`background/${projectId}`)).then(url => url)
+/**/          getUser()
+/**/          return getUrl
+/**/     }
 
   //////SIGNUP, LOGIN AND LOGOUT//////////////////////////////////////////////////////////////////
   /**/ const signup = async (auth, email, password) => {
@@ -157,10 +193,11 @@ export const AuthProvider = ({ children }) => {
     });
     /**/
     /**/
-  }, [auth, currentUserID, currentUser]);
+  }, []);
 
   const value = {
     currentUserID,
+    currentUser,
     signup,
     signin,
     signout,
@@ -168,6 +205,9 @@ export const AuthProvider = ({ children }) => {
     updatePass,
     deleteAccount,
     reauthenticateAccount,
+    addProject,
+    uploadBackground,
+    getBackBackground,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
