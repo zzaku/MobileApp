@@ -11,7 +11,7 @@ import {
   EmailAuthProvider,
 } from "firebase/auth";
 import { db, auth } from "../firebase/firebase";
-import { collection } from "firebase/firestore";
+import { collection, addDoc, getDocs } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ref, getStorage, getDownloadURL, uploadString, deleteObject, listAll, list } from "firebase/storage";
 
@@ -53,16 +53,16 @@ export const AuthProvider = ({ children }) => {
   }, [currentUserID]);
 
 ////////////////////////////////////////////////////////////
-/**/   const userProjectRef = currentUserID && collection(db, "Users", currentUserID.uid, "Project")
+/**/   //const userProjectRef = currentUserID ? collection(db, "Users", currentUserID.uid, "Project") : null;
 /**/
 /**/   const addProject = async (data) => {
-/**/          await addDoc(userProjectRef, data);
+/**/          await addDoc(collection(db, "Users", currentUserID.uid), data);
 /**/          getProject();
 /**/     }
 /**/
 /**/   const getProject = async () => {
-/**/          if(userProjectRef){
-/**/              const datas = await getDocs(userProjectRef);
+/**/          if(currentUserID){
+/**/              const datas = await getDocs(collection(db, "Users", currentUserID.uid));
 /**/              setCurrentUser({...currentUser, Project: datas.docs.map(doc => ({...doc.data(), id: doc.id}))})
 /**/          } else {
 /**/              setCurrentUser(null)

@@ -54,7 +54,7 @@ const AddProjectModal = ({showModal, setShowModal, ref}) => {
         visibility: ''
       });
 
-      const { addProject } = useAuth();
+    const { addProject } = useAuth();
 
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({
