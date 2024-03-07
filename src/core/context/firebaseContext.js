@@ -2,6 +2,7 @@ import { useContext, createContext, useState, useEffect } from "react";
 import { createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateEmail, updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth"
 import { db, auth } from "../firebase/firebase";
 import { collection} from "firebase/firestore";
+import { ref, getStorage, getDownloadURL, uploadString, deleteObject, listAll, list } from "firebase/storage";
 
 const AuthContext = createContext()
 
@@ -11,15 +12,47 @@ export const useAuth = () => {
 
 export const AuthProvider = ({children}) => {
     
-  
   ////////local storage currentUserID
   const userAccount = sessionStorage.user;
   const [currentUserID, setCurrentUserID] = useState(userAccount ? JSON.parse(userAccount) : {apiKey: "", appName: "", createdAt: "", email: "", emailVerified: null, isAnonymous: null, lastLoginAt: "", providerData: [], stsTokenManager: {}, uid: ""})
+    
+  ////////local storage currentUserInfo
+  const userAccountInfos = sessionStorage.userInfos;
+  const [currentUser, setCurrentUser] = useState(userAccountInfos ? JSON.parse(userAccountInfos) : null)
   
   useEffect(() => {
     sessionStorage.setItem("user", JSON.stringify(currentUserID));
   }, [currentUserID]);
-  ///////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////
+/**/   const userProjectRef = currentUserID && collection(db, "Users", currentUserID.uid, "Project")
+/**/
+/**/   const addProject = async (data) => {
+/**/          await addDoc(userProjectRef, data);
+/**/          getProject();
+/**/     }
+/**/
+/**/   const getProject = async () => {
+/**/          if(userProjectRef){
+/**/              const datas = await getDocs(userProjectRef);
+/**/              setCurrentUser({...currentUser, Project: datas.docs.map(doc => ({...doc.data(), id: doc.id}))})
+/**/          } else {
+/**/              setCurrentUser(null)
+/**/          }
+/**/      }
+/**/
+/**/   const uploadBackground = async (image, projectId) => {   
+/**/          const imageRef = ref(storage, `background/${projectId}`)
+/**/          await uploadString(imageRef, avatar, 'data_url')
+/**/          getUser()
+/**/     }
+/**/
+/**/   const getBackBackground = async (projectId) => {
+/**/          const storage = getStorage();
+/**/          const getUrl = getDownloadURL(ref(storage,`background/${projectId}`)).then(url => url)
+/**/          getUser()
+/**/          return getUrl
+/**/     }
 
 //////SIGNUP, LOGIN AND LOGOUT//////////////////////////////////////////////////////////////////
 /**/    const signup = async (auth, email, password) => {
@@ -92,7 +125,8 @@ export const AuthProvider = ({children}) => {
 /**/    }, [auth, currentUserID, currentUser])
 
     const value = {
-        setCurrentUserID,
+        currentUserID,
+        currentUser,
         signup,
         signin,
         signout,
@@ -100,6 +134,9 @@ export const AuthProvider = ({children}) => {
         updatePass,
         deleteAccount,
         reauthenticateAccount,
+        addProject,
+        uploadBackground,
+        getBackBackground,
     }
 
     return (
