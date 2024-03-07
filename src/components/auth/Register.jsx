@@ -41,7 +41,7 @@ export function Register({ navigation }) {
       const result = await signup(auth, email, password);
       console.log("User signed up successfully:", result);
 
-      AsyncStorage.setItem("user", JSON.stringify(result));
+      
 
       navigation.navigate("Home");
     } catch (error) {
