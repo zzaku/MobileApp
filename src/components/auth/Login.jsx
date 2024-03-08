@@ -32,7 +32,7 @@ export function Login({navigation}) {
 
     try {
       // Call the signup function here with email and password
-      const result = await signin(email, password);
+      const result = await signin(auth, email, password);
       console.log("User signed up successfully:", result);
 
       AsyncStorage.setItem("user", JSON.stringify(result));
