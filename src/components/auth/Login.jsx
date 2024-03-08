@@ -32,7 +32,7 @@ export function Login({navigation}) {
 
     try {
       // Call the signup function here with email and password
-      await signin(email, password);
+      await signin(auth, email, password);
 
       navigation.navigate("Boards");
 
@@ -45,8 +45,8 @@ export function Login({navigation}) {
   return (
     <View>
       <Text>Login</Text>
-      <TextInput style={styles.input} placeholder="Email" />
-      <TextInput style={styles.input} placeholder="Password" />
+      <TextInput onChangeText={setEmail} style={styles.input} placeholder="Email" />
+      <TextInput onChangeText={setPassword} style={styles.input} placeholder="Password" />
       <Text style={styles.error}>{error}</Text>
       <TouchableOpacity onPress={handleSignin} style={styles.button}>
         <Text style={styles.buttonText}>Login</Text>
