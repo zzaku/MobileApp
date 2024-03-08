@@ -1,4 +1,5 @@
-import { Modal, 
+import { 
+    Modal, 
     ModalBackdrop, 
     ModalContent, 
     ModalHeader, 
@@ -30,6 +31,7 @@ import { Modal,
     Divider,
     InputField,
     Toast,
+    useToast,
     VStack,
     ToastTitle,
     ToastDescription
@@ -54,7 +56,9 @@ const AddProjectModal = ({showModal, setShowModal, ref}) => {
         visibility: ''
       });
 
-      const { addProject } = useAuth();
+    const toast = useToast()
+
+    const { addProject } = useAuth();
 
     const pickImage = async () => {
         const result = await ImagePicker.launchImageLibraryAsync({

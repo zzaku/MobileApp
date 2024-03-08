@@ -11,6 +11,7 @@ import { Home } from "./vues/Home";
 import { Project } from "./vues/Project";
 
 import HomeHeader from "./core/header/HomeHeader";
+import { AuthProvider, useAuth } from "./core/context/firebaseContext";
 
 const Stack = createStackNavigator();
 
@@ -19,29 +20,49 @@ const headerBackground = () => {
 };
 
 const StackNav = () => {
+
+  const { currentUserID } = useAuth();
+  
   return (
     <GluestackUIProvider config={config}>
       <Stack.Navigator>
-        <Stack.Screen name="Boards" component={Home} options={{
-          headerStyle: {
-            height: 150,
-          },
-          headerTitle: '',
-          headerBackground: () => <HomeHeader />,
-          headerTintColor: '#FBFAF9',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }} />
-        <Stack.Screen name="Project" component={Project} options={{
-          headerStyle: {
-            backgroundColor: '#2B339B',
-          },
-          headerTintColor: '#FBFAF9',
-          headerTitleStyle: {
-            fontWeight: 'bold',
-          },
-        }} />
+        {
+          !currentUserID ?
+          <Stack.Screen name="Authentification" component={Auth} options={{
+            headerStyle: {
+              height: 150,
+              backgroundColor: "#140F3F"
+            },
+            headerTitle: 'Authentification',
+            headerTintColor: '#FBFAF9',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }} />
+          :
+          <>
+            <Stack.Screen name="Boards" component={Home} options={{
+              headerStyle: {
+                height: 150,
+              },
+              headerTitle: '',
+              headerBackground: () => <HomeHeader />,
+              headerTintColor: '#FBFAF9',
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
+            }} />
+            <Stack.Screen name="Project" component={Project} options={{
+              headerStyle: {
+                backgroundColor: '#2B339B',
+              },
+              headerTintColor: '#FBFAF9',
+              headerTitleStyle: {
+                fontWeight: 'bold',
+              },
+            }} />
+          </>
+        }
       </Stack.Navigator>
     </GluestackUIProvider>
   );
@@ -49,8 +70,10 @@ const StackNav = () => {
 
 export default function App() {
   return (
+    <AuthProvider>
       <NavigationContainer >
         <StackNav/>
       </NavigationContainer>
+    </AuthProvider>
   );
 }
