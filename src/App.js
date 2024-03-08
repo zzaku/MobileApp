@@ -1,11 +1,10 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { config } from '@gluestack-ui/config';
-
-import { View } from 'react-native';
-
+import { useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
+import { AuthProvider } from "./core/context/firebaseContext";
 import { Auth } from "./vues/Auth";
 import { Home } from "./vues/Home";
 import { Project } from "./vues/Project";
@@ -48,9 +47,30 @@ const StackNav = () => {
 };
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      try {
+        // Simulate checking if user is authenticated (e.g., checking AsyncStorage)
+        const isAuthenticated = await AsyncStorage.getItem("user");
+        setUser(isAuthenticated);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
   return (
-      <NavigationContainer >
-        <StackNav/>
-      </NavigationContainer>
+    <NavigationContainer>
+      <AuthProvider>
+      {user ? <StackNav /> : <Auth />}
+      </AuthProvider>
+    </NavigationContainer>
   );
 }
