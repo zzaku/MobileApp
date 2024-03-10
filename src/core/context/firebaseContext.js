@@ -10,10 +10,10 @@ import {
   reauthenticateWithCredential,
   EmailAuthProvider,
 } from "firebase/auth";
-import { db, auth } from "../firebase/firebase";
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { db, auth, storage } from "../firebase/firebase";
+import { collection, addDoc, getDocs, updateDoc, query, where, doc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ref, getStorage, getDownloadURL, uploadString, deleteObject, listAll, list } from "firebase/storage";
+import { ref, getStorage, getDownloadURL, uploadString, deleteObject, listAll, list, uploadBytes } from "firebase/storage";
 
 const AuthContext = createContext();
 
@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   const [currentUserID, setCurrentUserID] = useState(userAccount ? JSON.parse(userAccount) : null);
   
   const userAccountInfos = AsyncStorage.userInfos;
-  const [currentUser, setCurrentUser] = useState(userAccountInfos ? JSON.parse(userAccountInfos) : null)
+  const [currentUser, setCurrentUser] = useState(userAccountInfos ? JSON.parse(userAccountInfos) : null);
 
   useEffect(() => {
     AsyncStorage.setItem("userInfos", JSON.stringify(currentUser));
@@ -38,127 +38,191 @@ export const AuthProvider = ({ children }) => {
   }, [currentUserID]);
 
 ////////////////////////////////////////////////////////////
-/**/   //const userProjectRef = currentUserID ? collection(db, "Users", currentUserID.uid, "Project") : null;
+/**/   const userProjectRef = currentUserID ? collection(db, "projects") : null;
 /**/
-/**/   const addProject = async (data) => {
-/**/          await addDoc(collection(db, "projects", currentUserID.uid, "Poject"), data);
-/**/          getProject();
-/**/     }
+/**/   const addProject = (data, type_background, data_background, userId) => {
+/**/     return new Promise((resolve, reject) => {
+/**/       addDoc(userProjectRef, data)
+/**/         .then(async (res) => {
+/**/           await uploadBackground(type_background, data_background, res.id);
+/**/              await getAllProjectsByUserId(userId);
+/**/              resolve({ code: "approved" });
+/**/         })
+/**/         .catch((error) => {
+/**/           if(error.code === "not-found"){
+/**/              reject({ code: "not-found" });
+/**/           } else if(error.code === "auth"){
+/**/              reject({ code: "auth" });
+/**/           } else if ({ code: "uploadImage" }){
+/**/              reject({ code: "uploadImage" });
+/**/           } else {
+  /**/            reject({ code: "denied" });
+  /**/         }
+/**/         });
+/**/     });
+/**/   };
 /**/
-/**/   const getProject = async () => {
-/**/          if(currentUserID){
-/**/              const datas = await getDocs(collection(db, "Users", currentUserID.uid, "Poject"));
-/**/              setCurrentUser({...currentUser, Project: datas.docs.map(doc => ({...doc.data(), id: doc.id}))})
-/**/          } else {
-/**/              setCurrentUser(null)
-/**/          }
+/**/   const getAllProjectsByUserId = (userId) => {
+/**/    return new Promise(async (resolve, reject) => {
+/**/      if (currentUserID) {
+/**/          const q = query(collection(db, "projects"), where("collaboratorsIds", "array-contains", userId));
+/**/          const datas = await getDocs(q);
+/**/          
+/**/          setCurrentUser({...currentUser, projects: datas.docs.map(doc => ({...doc.data(), id: doc.id}))});
+/**/          resolve({code: "approved"});
+/**/      } else {
+/**/          setCurrentUser(null);
+/**/          resolve({code: "auth"});
 /**/      }
+/**/    });
+/**/  };
 /**/
-/**/   const uploadBackground = async (image, projectId) => {   
-/**/          const imageRef = ref(storage, `background/${projectId}`)
-/**/          await uploadString(imageRef, avatar, 'data_url')
-/**/          getUser()
-/**/     }
+/**/   const uploadBackground = (type_background, data_background, projectId) => {
+/**/    return new Promise(async (resolve, reject) => {
+/**/      try {
+/**/        const setProjectRef = doc(db, "projects", projectId);
+/**/        let background = "";
+/**/       
+/**/        if(type_background === "image"){
+/**/          const backgroundRef = ref(storage, `background/image-${projectId}`);
+/**/        
+/**/          await uploadBytes(backgroundRef, data_background.binary);
+/**/        
+/**/          background = await getBackBackground(projectId);
+/**/        } else if(type_background === "color"){
+/**/          background = data_background.color
+/**/        }
+/**/        
+/**/        await updateDoc(setProjectRef, { background: { data: background, type: type_background === "image" ? data_background.imageType : "color"}});
+/**/        
+/**/        resolve({code: "approved"});
+/**/      } catch (error) {
+/**/        reject({code: "uploadImage"});
+/**/      }
+/**/    });
+/**/  };
 /**/
-/**/   const getBackBackground = async (projectId) => {
-/**/          const storage = getStorage();
-/**/          const getUrl = getDownloadURL(ref(storage,`background/${projectId}`)).then(url => url)
-/**/          getUser()
-/**/          return getUrl
-/**/     }
+/**/   const getBackBackground = (projectId) => {
+/**/    return new Promise(async (resolve, reject) => {
+/**/      try {
+/**/        const storage = getStorage();
+/**/        const url = await getDownloadURL(ref(storage, `background/image-${projectId}`));
+/**/
+/**/        resolve(url);
+/**/      } catch (error) {
+/**/        reject(error);
+/**/      }
+/**/    });
+/**/   };
+/**/
+/**/   const setProjectFavoris = (projectId, isAlreadyFav, userId) => {
+/**/    return new Promise(async (resolve, reject) => {
+/**/      try {
+/**/        const setProjectRef = doc(db, "projects", projectId);
+/**/        
+/**/        await updateDoc(setProjectRef, { favoris: !isAlreadyFav});
+/**/        await getAllProjectsByUserId(userId);
+/**/        
+/**/        resolve({code: "approved"});
+/**/      } catch (error) {
+/**/        reject({code: "error-set-fav"});
+/**/      }
+/**/    });
+/**/   };
+////////////////////////////////////////////////////////////
 
   //////SIGNUP, LOGIN AND LOGOUT//////////////////////////////////////////////////////////////////
-  /**/ const signup = async (auth, email, password) => {
-    /**/
-    /**/ const fetchSignup = await createUserWithEmailAndPassword(
+   const signup = async (auth, email, password) => {
+    
+     const fetchSignup = await createUserWithEmailAndPassword(
       auth,
       email,
       password
     );
-    /**/ return fetchSignup;
-    /**/
+     return fetchSignup;
+    
   };
-  /**/
-  /**/ const signin = async (auth, email, password) => {
-    /**/ const fetchSignin = await signInWithEmailAndPassword(
+  
+   const signin = async (auth, email, password) => {
+     const fetchSignin = await signInWithEmailAndPassword(
       auth,
       email,
       password
     );
-    /**/ return fetchSignin;
-    /**/
+     return fetchSignin;
+    
   };
-  /**/
-  /**/ const signout = async () => {
-    /**/ const fetchSignout = await signOut(auth);
-    /**/ return fetchSignout;
-    /**/
+  
+   const signout = async () => {
+     const fetchSignout = await signOut(auth);
+     return fetchSignout;
+    
   };
-  /**/
-  /**/ const updateMail = async (email) => {
-    /**/ await updateEmail(auth.currentUser, email);
-    /**/
+  
+   const updateMail = async (email) => {
+     await updateEmail(auth.currentUser, email);
+    
   };
-  /**/
-  /**/ const updatePass = async (newPassword) => {
-    /**/ await updatePassword(auth.currentUser, newPassword);
-    /**/
+  
+   const updatePass = async (newPassword) => {
+     await updatePassword(auth.currentUser, newPassword);
+    
   };
-  /**/
-  /**/ const deleteAccount = async (idUser) => {
-    /**/
-    /**/ const deleteCurrentUser = doc(db, "Users", idUser);
-    /**/ const deleteCurrentUserPref = collection(db, "Users", idUser, "");
-    /**/ const deleteCurrentUserResume = collection(db, "Users", idUser, "");
-    /**/
-    /**/
-    /**/ await onSnapshot(deleteCurrentUserPref, async (elem) => {
-      /**/ elem.docs.map(async (document) => {
-        /**/ const deleteUserPreferences = doc(
+  
+   const deleteAccount = async (idUser) => {
+    
+     const deleteCurrentUser = doc(db, "Users", idUser);
+     const deleteCurrentUserPref = collection(db, "Users", idUser, "");
+     const deleteCurrentUserResume = collection(db, "Users", idUser, "");
+    
+    
+     await onSnapshot(deleteCurrentUserPref, async (elem) => {
+       elem.docs.map(async (document) => {
+         const deleteUserPreferences = doc(
           db,
           "Users",
           idUser,
           "",
           document._key.path.segments.at(-1)
         );
-        /**/ await deleteDoc(deleteUserPreferences);
-        /**/
+         await deleteDoc(deleteUserPreferences);
+        
       });
-      /**/
+      
     });
-    /**/
-    /**/ await onSnapshot(deleteCurrentUserResume, async (elem) => {
-      /**/ elem.docs.map(async (document) => {
-        /**/ const deleteCurrentResume = doc(
+    
+     await onSnapshot(deleteCurrentUserResume, async (elem) => {
+       elem.docs.map(async (document) => {
+         const deleteCurrentResume = doc(
           db,
           "Users",
           idUser,
           "",
           document._key.path.segments.at(-1)
         );
-        /**/ await deleteDoc(deleteCurrentResume);
-        /**/
+         await deleteDoc(deleteCurrentResume);
+        
       });
-      /**/
+      
     });
-    /**/
-    /**/ await deleteDoc(deleteCurrentUser);
-    /**/ await deleteUser(auth.currentUser);
-    /**/
+    
+     await deleteDoc(deleteCurrentUser);
+     await deleteUser(auth.currentUser);
+    
   };
-  /**/
-  /**/ const reauthenticateAccount = async (userProvidedPassword) => {
-    /**/
-    /**/ const credential = EmailAuthProvider.credential(
+  
+   const reauthenticateAccount = async (userProvidedPassword) => {
+    
+     const credential = EmailAuthProvider.credential(
       auth.currentUser.email,
       userProvidedPassword
     );
-    /**/
-    /**/ await reauthenticateWithCredential(auth.currentUser, credential);
-    /**/
+    
+     await reauthenticateWithCredential(auth.currentUser, credential);
+    
   };
-  /**/
-  /**/ useEffect(() => {
+  
+   useEffect(() => {
     return onAuthStateChanged(auth, (user) => {
       if (user) {
         setCurrentUserID(user);
@@ -173,16 +237,13 @@ export const AuthProvider = ({ children }) => {
           setCurrentUserID(user);
         };
       }
-
-      /**/
     });
-    /**/
-    /**/
   }, []);
 
   const value = {
     currentUserID,
     currentUser,
+    setCurrentUser,
     signup,
     signin,
     signout,
@@ -191,8 +252,10 @@ export const AuthProvider = ({ children }) => {
     deleteAccount,
     reauthenticateAccount,
     addProject,
+    getAllProjectsByUserId,
     uploadBackground,
     getBackBackground,
+    setProjectFavoris,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
