@@ -1,9 +1,14 @@
 import { SearchIcon } from "lucide-react-native"
 import { Heading } from "@gluestack-ui/themed"
-import { Box, Button, ButtonIcon } from '@gluestack-ui/themed';
+import { Box, Input, InputSlot, InputField, InputIcon } from '@gluestack-ui/themed';
 import { View, StyleSheet, Text } from 'react-native';
+import { useAuth } from "../context/firebaseContext";
+import { useEffect, useState } from "react";
 
 const HomeHeader = () => {
+    const { currentUser, setCurrentUser } = useAuth();
+    const [searchText, setSearchText] = useState("");
+
 
     return (
         <View style={styles.container}>
@@ -11,19 +16,14 @@ const HomeHeader = () => {
                 <Box width="$full" flexDirection="row" justifyContent='space-around' marginTop="$2" alignItems="center" height="100%">
                     <Box flexDirection="column">
                         <Heading style={[styles.whiteColor, styles.title]}>Mes Projets</Heading>
-                        <Text style={styles.whiteColor}>Nombre de projet : 8</Text>
+                        <Text style={styles.whiteColor}>Nombre de projet : {currentUser?.projects?.length}</Text>
                     </Box>
-                    <Button
-                        borderRadius="$full"
-                        size="lg"
-                        p="$3.5"
-                        bg="#FAB425"
-                        borderColor="#212AA2"
-                        borderWidth={2}
-                        >
-                        {/* EditIcon is imported from 'lucide-react-native' */}
-                        <ButtonIcon as={SearchIcon} color="#161519" size="xl" />
-                    </Button>
+                    <Input variant="rounded" w="50%" onch>
+                        <InputSlot pl="$5">
+                            <InputIcon as={SearchIcon} />
+                        </InputSlot>
+                        <InputField color="#FBFAF9" placeholder="Rechercher..." onChangeText={text => setSearchText(text)}  />
+                    </Input>
                 </Box>
             </View>
         </View>
