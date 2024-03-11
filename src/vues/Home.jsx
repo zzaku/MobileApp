@@ -13,7 +13,7 @@ export function Home({navigation}) {
 
   const { currentUserID, currentUser, getAllProjectsByUserId } = useAuth();
   const { loading, setLoading } = useLoading();
-  
+
   const ref = useRef(null);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export function Home({navigation}) {
               <FlatList
                 data={currentUser?.projects}
                 keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => item.favoris && <ProjectFavorisCard currentProject={item} />}
+                renderItem={({ item }) => item.favoris && <ProjectFavorisCard navigation={navigation} currentProject={item} />}
                 horizontal={true}
               />
             :
@@ -72,7 +72,7 @@ export function Home({navigation}) {
               <FlatList
                 data={currentUser?.projects}
                 keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => !item.favoris && <ProjectCard currentProject={item} />}
+                renderItem={({ item }) => !item.favoris && <ProjectCard navigation={navigation} currentProject={item} />}
               />
               :
               <Text color="#FBFAF9">Aucun projet crée pour le moment.</Text>
