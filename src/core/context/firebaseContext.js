@@ -11,7 +11,7 @@ import {
   EmailAuthProvider,
 } from "firebase/auth";
 import { db, auth, storage } from "../firebase/firebase";
-import { collection, addDoc, getDocs, updateDoc, query, where, doc } from "firebase/firestore";
+import { collection, addDoc, getDocs, updateDoc, query, where, doc, getDoc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ref, getStorage, getDownloadURL, uploadString, deleteObject, listAll, list, uploadBytes } from "firebase/storage";
 
@@ -28,6 +28,9 @@ export const AuthProvider = ({ children }) => {
   
   const userAccountInfos = AsyncStorage.userInfos;
   const [currentUser, setCurrentUser] = useState(userAccountInfos ? JSON.parse(userAccountInfos) : null);
+  
+  const projectColonne = AsyncStorage.colonnes;
+  const [currentProjectColonnes, setCurrentProjectColonnes] = useState(projectColonne ? JSON.parse(currentProjectColonnes) : null);
 
   useEffect(() => {
     AsyncStorage.setItem("userInfos", JSON.stringify(currentUser));
@@ -36,6 +39,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     AsyncStorage.setItem("user", JSON.stringify(currentUserID));
   }, [currentUserID]);
+  
+  useEffect(() => {
+    AsyncStorage.setItem("colonnes", JSON.stringify(currentProjectColonnes));
+  }, [currentProjectColonnes]);
 
 ////////////////////////////////////////////////////////////
 /**/   const userProjectRef = currentUserID ? collection(db, "projects") : null;
@@ -46,6 +53,7 @@ export const AuthProvider = ({ children }) => {
 /**/         .then(async (res) => {
 /**/           await uploadBackground(type_background, data_background, res.id);
 /**/              await getAllProjectsByUserId(userId);
+/**/              await getAllColonnes(projectId);
 /**/              resolve({ code: "approved" });
 /**/         })
 /**/         .catch((error) => {
@@ -56,9 +64,58 @@ export const AuthProvider = ({ children }) => {
 /**/           } else if ({ code: "uploadImage" }){
 /**/              reject({ code: "uploadImage" });
 /**/           } else {
-  /**/            reject({ code: "denied" });
-  /**/         }
-/**/         });
+/**/            reject({ code: "denied" });
+/**/           }
+/**/        });
+/**/     });
+/**/   };
+/**/
+/**/   const addColonne = (data, projectId, userId) => {
+/**/     return new Promise((resolve, reject) => {
+/**/       const userProjectRef = currentUserID ? collection(db, "projects", projectId, "colonnes") : null;
+/**/       
+/**/       addDoc(userProjectRef, data)
+/**/         .then(async (res) => {
+/**/              await getAllProjectsByUserId(userId);
+/**/              await getAllColonnes(projectId);
+/**/              resolve({ code: "approved" });
+/**/         })
+/**/         .catch((error) => {
+/**/           if(error.code === "not-found"){
+/**/              reject({ code: "not-found" });
+/**/           } else if(error.code === "auth"){
+/**/              reject({ code: "auth" });
+/**/           } else if ({ code: "uploadImage" }){
+/**/              reject({ code: "uploadImage" });
+/**/           } else {
+/**/            reject({ code: "denied" });
+/**/           }
+/**/        });
+/**/     });
+/**/   };
+/**/   
+/**/   const addTask = (data, image_data, projectId, colonneId, userId) => {
+/**/     return new Promise((resolve, reject) => {
+/**/       const userProjectColonneRef = currentUserID ? collection(db, "projects", projectId, "colonnes", colonneId, "tasks") : null;
+/**/     
+/**/       addDoc(userProjectColonneRef, data)
+/**/         .then(async (res) => {
+/**/           await uploadTaskImage(image_data, projectId, colonneId, res.id);
+/**/              await getAllProjectsByUserId(userId);
+/**/              await getAllColonnes(projectId);
+/**/              resolve({ code: "approved" });
+/**/         })
+/**/         .catch((error) => {
+/**/           if(error.code === "not-found"){
+/**/              reject({ code: "not-found" });
+/**/           } else if(error.code === "auth"){
+/**/              reject({ code: "auth" });
+/**/           } else if ({ code: "uploadImage" }){
+/**/              reject({ code: "uploadImage" });
+/**/           } else {
+/**/            reject({ code: "denied" });
+/**/           }
+/**/        });
 /**/     });
 /**/   };
 /**/
@@ -72,6 +129,21 @@ export const AuthProvider = ({ children }) => {
 /**/          resolve({code: "approved"});
 /**/      } else {
 /**/          setCurrentUser(null);
+/**/          resolve({code: "auth"});
+/**/      }
+/**/    });
+/**/  };
+/**/
+/**/   const getAllTasksByColonne = (projectId, colonneId) => {
+/**/    return new Promise(async (resolve, reject) => {
+/**/      if (currentUserID) {
+/**/          const tasksRef = collection(db, "projects", projectId, "colonnes", colonneId, "tasks");
+/**/          const datas = await getDocs(tasksRef);
+/**/         
+/**/          setCurrentProjectColonnes({...currentProjectColonnes, tasks: datas.docs.map(doc => ({...doc.data(), id: doc.id}))});
+/**/          resolve({data: datas.docs.map(doc => ({...doc.data(), id: doc.id}))});
+/**/      } else {
+/**/          setCurrentProjectColonnes(null);
 /**/          resolve({code: "auth"});
 /**/      }
 /**/    });
@@ -115,6 +187,40 @@ export const AuthProvider = ({ children }) => {
 /**/    });
 /**/   };
 /**/
+/**/   const uploadTaskImage = (image_data, projectId, colonneId, taskId) => {
+/**/    return new Promise(async (resolve, reject) => {
+/**/      try {
+/**/        const setTaskRef = doc(db, "projects", projectId, "colonnes", colonneId, "tasks", taskId );
+/**/        let image = "";
+/**/       
+/**/        const backgroundRef = ref(storage, `task/image-${taskId}`);
+/**/        
+/**/        await uploadBytes(backgroundRef, image_data.image);
+/**/        
+/**/        image = await getBackTaskImage(taskId);
+/**/        
+/**/        await updateDoc(setTaskRef, { image: { data: image, type: image_data.imageType}});
+/**/        
+/**/        resolve({code: "approved"});
+/**/      } catch (error) {
+/**/        reject({code: "uploadImage"});
+/**/      }
+/**/    });
+/**/  };
+/**/
+/**/   const getBackTaskImage = (taskId) => {
+/**/    return new Promise(async (resolve, reject) => {
+/**/      try {
+/**/        const storage = getStorage();
+/**/        const url = await getDownloadURL(ref(storage, `task/image-${taskId}`));
+/**/
+/**/        resolve(url);
+/**/      } catch (error) {
+/**/        reject(error);
+/**/      }
+/**/    });
+/**/   };
+/**/
 /**/   const setProjectFavoris = (projectId, isAlreadyFav, userId) => {
 /**/    return new Promise(async (resolve, reject) => {
 /**/      try {
@@ -123,6 +229,23 @@ export const AuthProvider = ({ children }) => {
 /**/        await updateDoc(setProjectRef, { favoris: !isAlreadyFav});
 /**/        await getAllProjectsByUserId(userId);
 /**/        
+/**/        resolve({code: "approved"});
+/**/      } catch (error) {
+/**/        reject({code: "error-set-fav"});
+/**/      }
+/**/    });
+/**/   };
+/**/
+/**/   const getAllColonnes = (projectId) => {
+/**/    return new Promise(async (resolve, reject) => {
+/**/      try {
+/**/        const colonnesRef = collection(db, "projects", projectId, "colonnes");
+/**/        
+/**/        const datas = await getDocs(colonnesRef);
+/**/        const res = datas.docs.map(doc => ({...doc.data(), id: doc.id}))
+/**/       
+/**/        setCurrentProjectColonnes({...currentProjectColonnes, colonnes: datas.docs.map(doc => ({...doc.data(), id: doc.id}))})
+/**/       
 /**/        resolve({code: "approved"});
 /**/      } catch (error) {
 /**/        reject({code: "error-set-fav"});
@@ -238,11 +361,14 @@ export const AuthProvider = ({ children }) => {
         };
       }
     });
-  }, []);
+  }, [currentUserID]);
 
   const value = {
     currentUserID,
     currentUser,
+    currentProjectColonnes,
+    addColonne,
+    addTask,
     setCurrentUser,
     signup,
     signin,
@@ -256,6 +382,8 @@ export const AuthProvider = ({ children }) => {
     uploadBackground,
     getBackBackground,
     setProjectFavoris,
+    getAllColonnes,
+    getAllTasksByColonne,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

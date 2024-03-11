@@ -1,6 +1,5 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
-import { createMaterialBottomTabNavigator } from "@react-navigation/material-bottom-tabs";
 import { GluestackUIProvider } from '@gluestack-ui/themed';
 import { config } from '@gluestack-ui/config';
 
@@ -53,15 +52,19 @@ const StackNav = () => {
                 fontWeight: 'bold',
               },
             }} />
-            <Stack.Screen name="Project" component={Project} options={{
-              headerStyle: {
-                backgroundColor: '#2B339B',
-              },
-              headerTintColor: '#FBFAF9',
-              headerTitleStyle: {
-                fontWeight: 'bold',
-              },
-            }} />
+            <Stack.Screen name="Project" component={Project} options={({ route }) => (
+              {
+                headerStyle: {
+                  backgroundColor: '#2B339B',
+                },
+                title: `Project : ${route.params.project.projectTitle}`,
+                headerTintColor: '#FBFAF9',
+                headerTitleStyle: {
+                  fontWeight: 'bold',
+                },
+                url: `/project/${route.params.project.id}`
+              }
+            )} />
           </>
         }
       </Stack.Navigator>
